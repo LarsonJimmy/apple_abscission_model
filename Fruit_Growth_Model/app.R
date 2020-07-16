@@ -14,12 +14,13 @@ ui <- fluidPage(
         # sidebar panel for inputs
         sidebarPanel(
             # input: file
-            fileInput("file1", "Choose CSV File",
+            fileInput("file1", "Choose CSV File:",
                       multiple = TRUE,
                       accept = c("csv", "comma-separated-values", ".csv" )
         ),
-            tags$hr(),
-            checkboxInput("header", "Header", TRUE)
+            checkboxInput("header", "Header", TRUE),
+        tags$hr(),
+            numericInput("target", "Target Fruit Set:", 0, min = 1, max = 100)
     ),
     mainPanel(
         plotOutput("scatterplot"),
@@ -29,6 +30,8 @@ ui <- fluidPage(
 )
 
 server <- function(input, output) {
+    target_cropload <- reactive({input$target})
+     ## render plot
     output$scatterplot <- renderPlot({
         req(input$file1)
         
@@ -109,7 +112,7 @@ server <- function(input, output) {
         growth.rates %>%
             drop_na() %>%
             ggplot(aes(x = growth.rate, y = outcome, color = outcome)) +
-            geom_point(alpha = 0.5) + 
+            geom_point(alpha = 0.5, size = 3) + 
             facet_wrap( ~ rate.date, labeller = labeller(rate.date = facet_labels)) +
             scale_color_brewer(palette = "Dark2") +
             labs(x = "Growth Rate (Current - Previous Diameter)",
@@ -117,7 +120,7 @@ server <- function(input, output) {
                  color = "Outcome") +
             theme_bw()
     })
-    
+    ## render table
     output$contents <- renderTable({
         req(input$file1)
         ## load in dataframe----
@@ -194,10 +197,31 @@ server <- function(input, output) {
         
         ## create table----
         growth.rates %>%
-            #drop_na() %>%
+            drop_na() %>%
+            mutate(outcome = case_when(
+                outcome ==  "abscise" ~ "Abscise",
+                outcome ==  "persist" ~ "Persist"),
+                rate.date = case_when(
+                    rate.date == "rate.1" ~ "After Date 2",
+                    rate.date == "rate.2" ~ "After Date 3",
+                    rate.date == "rate.3" ~ "After Date 4",
+                    rate.date == "rate.4" ~ "After Date 5",
+                    rate.date == "rate.5" ~ "After Date 6",
+                    rate.date == "rate.6" ~ "After Date 7"
+                )) %>%
             group_by(rate.date, outcome) %>%
             count() %>%
-            mutate(percent_drop = n/511 * 100)
+            mutate(percent_drop = n/511 * 100,
+                   percent_drop = round(percent_drop,0),
+                   target_set = target_cropload(),
+                   ) %>%
+            #filter(outcome == "persist") %>%
+            select(rate.date, n, percent_drop, target_set) %>%
+            rename("Predicted Outcome" = outcome,
+                   "Measurement Date" = rate.date,
+                   "Number of Fruit" = n,
+                   "Percent of Fruit Measured" = percent_drop,
+                   "Target Number Fruit Set" = target_set)
     })
 }
 # Run the App
