@@ -25,6 +25,7 @@ ui <- fluidPage(
         ## input target crop load----
         tags$hr(),
             numericInput("target", "Target Fruit Set:", 0, min = 1, max = 100),
+        p("Target fruit set is the number of fruit of total measured that are desired to persist following thinning."),
         ## measurement date inputs----
         tags$hr(),
             dateInput("meas1", "First Measurement Date:", format = "M/d/yyyy"),
