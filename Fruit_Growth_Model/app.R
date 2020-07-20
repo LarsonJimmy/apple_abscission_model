@@ -13,25 +13,53 @@ ui <- fluidPage(
     sidebarLayout(
         # sidebar panel for inputs
         sidebarPanel(
-            # input: file
+            ## download data template----
+            downloadButton("downloadtemplate", "Download Measurement Template"),
+            tags$hr(),
+            ## input: file----
             fileInput("file1", "Choose CSV File:",
                       multiple = TRUE,
                       accept = c("csv", "comma-separated-values", ".csv" )
         ),
             checkboxInput("header", "Header", TRUE),
+        ## input target crop load----
         tags$hr(),
-            numericInput("target", "Target Fruit Set:", 0, min = 1, max = 100)
+            numericInput("target", "Target Fruit Set:", 0, min = 1, max = 100),
+        ## measurement date inputs----
+        tags$hr(),
+            dateInput("meas1", "First Measurement Date:", format = "M/d/yyyy"),
+            dateInput("meas2", "Second Measurement Date:", format = "M/d/yyyy"),
+            dateInput("meas3", "Third Measurement Date:", format = "M/d/yyyy"),
+            dateInput("meas4", "Fourth Measurement Date:", format = "M/d/yyyy"),
+            dateInput("meas5", "Fifth Measurement Date:", format = "M/d/yyyy"),
+            dateInput("meas6", "Sixth Measurement Date:", format = "M/d/yyyy"),
+            dateInput("meas7", "Seventh Measurement Date:", format = "M/d/yyyy"),
+        ## chemical thinner inputs----
+        tags$hr(),
+            dateInput("date", "Date of Thinner Application:", format = "M/d/yyyy"),
+            textInput("thinner", "Chemical Thinner Applied:"),
+            textInput("rate", "Rate Applied:")
     ),
+    ## outputs----
     mainPanel(
         plotOutput("scatterplot"),
         tableOutput("contents")
         )
     )
 )
-
+## server----
 server <- function(input, output) {
+    ## reactive inputs----
     target_cropload <- reactive({input$target})
-     ## render plot
+    meas1 <- reactive({input$meas1})
+    meas2 <- reactive({input$meas2})
+    meas3 <- reactive({input$meas3})
+    meas4 <- reactive({input$meas4})
+    meas5 <- reactive({input$meas5})
+    meas6 <- reactive({input$meas6})
+    meas7 <- reactive({input$meas7})
+    
+     ## render plot----
     output$scatterplot <- renderPlot({
         req(input$file1)
         
@@ -107,7 +135,8 @@ server <- function(input, output) {
             gather(date.2.outcome:date.7.outcome, key = "date", value = "outcome") -> abscission.outcome
         growth.rates$outcome <- abscission.outcome$outcome
         ## plot data ----
-        facet_labels <- c("After Date 2", "After Date 3", "After Date 4", "After Date 5", "After Date 6", "After Date 7")
+        facet_labels <- c(paste("After", meas2()), paste("After", meas3()), paste("After", meas4()), paste("After", meas5()),
+                          paste("After", meas6()), paste("After", meas7()))
         names(facet_labels) <- c("rate.1", "rate.2", "rate.3", "rate.4", "rate.5", "rate.6")
         growth.rates %>%
             drop_na() %>%
@@ -120,7 +149,7 @@ server <- function(input, output) {
                  color = "Outcome") +
             theme_bw()
     })
-    ## render table
+    ## render table----
     output$contents <- renderTable({
         req(input$file1)
         ## load in dataframe----
@@ -202,12 +231,12 @@ server <- function(input, output) {
                 outcome ==  "abscise" ~ "Abscise",
                 outcome ==  "persist" ~ "Persist"),
                 rate.date = case_when(
-                    rate.date == "rate.1" ~ "After Date 2",
-                    rate.date == "rate.2" ~ "After Date 3",
-                    rate.date == "rate.3" ~ "After Date 4",
-                    rate.date == "rate.4" ~ "After Date 5",
-                    rate.date == "rate.5" ~ "After Date 6",
-                    rate.date == "rate.6" ~ "After Date 7"
+                    rate.date == "rate.1" ~ paste(meas2()),
+                    rate.date == "rate.2" ~ paste(meas3()),
+                    rate.date == "rate.3" ~ paste(meas4()),
+                    rate.date == "rate.4" ~ paste(meas5()),
+                    rate.date == "rate.5" ~ paste(meas6()),
+                    rate.date == "rate.6" ~ paste(meas7())
                 )) %>%
             group_by(rate.date, outcome) %>%
             count() %>%
@@ -223,6 +252,16 @@ server <- function(input, output) {
                    "Percent of Fruit Measured" = percent_drop,
                    "Target Number Fruit Set" = target_set)
     })
+    ## download template----
+    output$downloadtemplate <- downloadHandler(
+        filename <- function(){
+            "fgm_data_template.csv"
+        },
+        content <- function(file){
+            file.copy("fgm_data_template.csv", file)
+        }
+    )
 }
-# Run the App
+
+# Run the App----
 shinyApp(ui, server)
