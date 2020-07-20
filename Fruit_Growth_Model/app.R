@@ -7,7 +7,7 @@ library(shiny)
 library(tidyverse)
 ## define UI for app----
 ui <- fluidPage(
-    # App Title
+    # App Title 
     titlePanel("Fruit Growth Model"),
     # sidebar layout with input and output definitions
     sidebarLayout(
