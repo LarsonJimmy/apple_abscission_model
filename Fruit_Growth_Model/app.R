@@ -5,6 +5,7 @@
 ## load packages
 library(shiny)
 library(tidyverse)
+
 ## define UI for app----
 ui <- fluidPage(
     # App Title 
@@ -24,7 +25,7 @@ ui <- fluidPage(
             checkboxInput("header", "Header", TRUE),
         ## input target crop load----
         tags$hr(),
-            numericInput("target", "Target Fruit Set:", 0, min = 1, max = 100),
+            numericInput("target", "Target Fruit Set:", 1, min = 1, max = 100),
         p("Target fruit set is the number of fruit of total measured that are desired to persist following thinning."),
         ## measurement date inputs----
         tags$hr(),
@@ -41,6 +42,8 @@ ui <- fluidPage(
             textInput("thinner", "Chemical Thinner Applied:"),
             textInput("rate", "Rate Applied:")
     ),
+        ## action button----
+        #actionButton("gobutton", "Go!"),
     ## outputs----
     mainPanel(
         plotOutput("scatterplot"),
@@ -49,7 +52,7 @@ ui <- fluidPage(
     )
 )
 ## server----
-server <- function(input, output) {
+server <- function(input, output, session) {
     ## reactive inputs----
     target_cropload <- reactive({input$target})
     meas1 <- reactive({input$meas1})
@@ -59,7 +62,6 @@ server <- function(input, output) {
     meas5 <- reactive({input$meas5})
     meas6 <- reactive({input$meas6})
     meas7 <- reactive({input$meas7})
-    
      ## render plot----
     output$scatterplot <- renderPlot({
         req(input$file1)
@@ -244,14 +246,16 @@ server <- function(input, output) {
             mutate(percent_drop = n/511 * 100,
                    percent_drop = round(percent_drop,0),
                    target_set = target_cropload(),
-                   ) %>%
-            #filter(outcome == "persist") %>%
-            select(rate.date, n, percent_drop, target_set) %>%
+                   target_per = target_set/511 * 100,
+                   target_per = round(target_per, 0)) %>%
+            filter(outcome == "Persist") %>%
+            select(rate.date, n, percent_drop, target_set, target_per) %>%
             rename("Predicted Outcome" = outcome,
                    "Measurement Date" = rate.date,
                    "Number of Fruit" = n,
                    "Percent of Fruit Measured" = percent_drop,
-                   "Target Number Fruit Set" = target_set)
+                   "Target Number Fruit Set" = target_set,
+                   "Target Percent of Persisting Fruit" = target_per)
     })
     ## download template----
     output$downloadtemplate <- downloadHandler(
