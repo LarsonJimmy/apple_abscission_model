@@ -6,51 +6,60 @@
 library(shiny)
 library(tidyverse)
 
+## output directory----
+outputDir <- "responses"
+## saveData function----
+saveData <- function(data) {
+    data <- t(data)
+    fileName <- sprintf("%s_%s.csv", as.integer(Sys.time()), digest::digest(data))
+    write.csv(
+        x = data,
+        file = file.path(outputDir, fileName),
+        row.names = FALSE, quote = TRUE
+    )
+}
+## define fields----
+fields <- c("target")
+## run app----
+shinyApp(
 ## define UI for app----
 ui <- fluidPage(
     # App Title 
     titlePanel("Fruit Growth Model"),
-    # sidebar layout with input and output definitions
-    sidebarLayout(
-        # sidebar panel for inputs
-        sidebarPanel(
-            ## download data template----
-            downloadButton("downloadtemplate", "Download Measurement Template"),
-            tags$hr(),
-            ## input: file----
-            fileInput("file1", "Choose CSV File:",
-                      multiple = TRUE,
-                      accept = c("csv", "comma-separated-values", ".csv" )
-        ),
-            checkboxInput("header", "Header", TRUE),
-        ## input target crop load----
-        tags$hr(),
-            numericInput("target", "Target Fruit Set:", 1, min = 1, max = 100),
-        p("Target fruit set is the number of fruit of total measured that are desired to persist following thinning."),
-        ## measurement date inputs----
-        tags$hr(),
-            dateInput("meas1", "First Measurement Date:", format = "M/d/yyyy"),
-            dateInput("meas2", "Second Measurement Date:", format = "M/d/yyyy"),
-            dateInput("meas3", "Third Measurement Date:", format = "M/d/yyyy"),
-            dateInput("meas4", "Fourth Measurement Date:", format = "M/d/yyyy"),
-            dateInput("meas5", "Fifth Measurement Date:", format = "M/d/yyyy"),
-            dateInput("meas6", "Sixth Measurement Date:", format = "M/d/yyyy"),
-            dateInput("meas7", "Seventh Measurement Date:", format = "M/d/yyyy"),
-        ## chemical thinner inputs----
-        tags$hr(),
-            dateInput("date", "Date of Thinner Application:", format = "M/d/yyyy"),
-            textInput("thinner", "Chemical Thinner Applied:"),
-            textInput("rate", "Rate Applied:")
-    ),
-        ## action button----
-        #actionButton("gobutton", "Go!"),
+    ## download data template----
+    downloadButton("downloadtemplate", "Download Measurement Template"),
+    tags$hr(),
+    ## input: file----
+    fileInput("file1", "Choose CSV File:",
+              multiple = TRUE,
+              accept = c("csv", "comma-separated-values", ".csv" )),
+    checkboxInput("header", "Header", TRUE),
+    ## input target crop load----
+    tags$hr(),
+    numericInput("target", "Target Fruit Set:", 1, min = 1, max = 100),
+    p("Target fruit set is the number of fruit of total measured that are desired to persist following thinning."),
+    ## measurement date inputs----
+    tags$hr(),
+    dateInput("meas1", "First Measurement Date:", format = "M/d/yyyy"),
+    dateInput("meas2", "Second Measurement Date:", format = "M/d/yyyy"),
+    dateInput("meas3", "Third Measurement Date:", format = "M/d/yyyy"),
+    dateInput("meas4", "Fourth Measurement Date:", format = "M/d/yyyy"),
+    dateInput("meas5", "Fifth Measurement Date:", format = "M/d/yyyy"),
+    dateInput("meas6", "Sixth Measurement Date:", format = "M/d/yyyy"),
+    dateInput("meas7", "Seventh Measurement Date:", format = "M/d/yyyy"),
+    ## chemical thinner inputs----
+    tags$hr(),
+    dateInput("date", "Date of Thinner Application:", format = "M/d/yyyy"),
+    textInput("thinner", "Chemical Thinner Applied:"),
+    textInput("rate", "Rate Applied:"),
+    ## action button----
+    actionButton("gobutton", "Go!"),
     ## outputs----
     mainPanel(
         plotOutput("scatterplot"),
         tableOutput("contents")
         )
-    )
-)
+    ),
 ## server----
 server <- function(input, output, session) {
     ## reactive inputs----
@@ -62,7 +71,7 @@ server <- function(input, output, session) {
     meas5 <- reactive({input$meas5})
     meas6 <- reactive({input$meas6})
     meas7 <- reactive({input$meas7})
-     ## render plot----
+    ## render plot----
     output$scatterplot <- renderPlot({
         req(input$file1)
         
@@ -266,7 +275,13 @@ server <- function(input, output, session) {
             file.copy("fgm_data_template.csv", file)
         }
     )
+    formData <- reactive({
+        data <- sapply(fields, function(x) input[[x]])
+        data
+    })
+    
+    observeEvent(input$gobutton, {
+        saveData(formData())
+    })
 }
-
-# Run the App----
-shinyApp(ui, server)
+)
