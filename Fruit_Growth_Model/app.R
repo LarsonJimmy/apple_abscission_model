@@ -19,13 +19,14 @@ saveData <- function(data) {
     )
 }
 ## define fields----
-fields <- c("target")
+fields <- c("target", "meas1", "meas2", "meas3", "meas4", "meas5", "meas6", "meas7", "date", "thinner", "rate")
 ## run app----
 shinyApp(
 ## define UI for app----
 ui <- fluidPage(
     # App Title 
     titlePanel("Fruit Growth Model"),
+    sidebarPanel(
     ## download data template----
     downloadButton("downloadtemplate", "Download Measurement Template"),
     tags$hr(),
@@ -53,7 +54,7 @@ ui <- fluidPage(
     textInput("thinner", "Chemical Thinner Applied:"),
     textInput("rate", "Rate Applied:"),
     ## action button----
-    actionButton("gobutton", "Go!"),
+    actionButton("gobutton", "Go!")),
     ## outputs----
     mainPanel(
         plotOutput("scatterplot"),
@@ -275,13 +276,24 @@ server <- function(input, output, session) {
             file.copy("fgm_data_template.csv", file)
         }
     )
+    ## write input info to a form----
     formData <- reactive({
         data <- sapply(fields, function(x) input[[x]])
         data
     })
-    
+    observeEvent(input$gobutton, {
+                 req(input$file1)
+                 
+                 data <- read.csv(input$file1$datapath,
+                          header = input$header)
+                 data <- t(data)
+                 
+                 saveData(data)
+    })
+    ## save data when button is clicked----
     observeEvent(input$gobutton, {
         saveData(formData())
     })
+    
 }
 )
